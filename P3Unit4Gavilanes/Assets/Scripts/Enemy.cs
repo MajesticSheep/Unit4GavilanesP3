@@ -3,7 +3,7 @@ using UnityEngine;
 public class Enemy : MonoBehaviour
 {
 
-    public float speed = 3.0f;
+    private float speed = 2.0f;
     private Rigidbody enemyRb;
     private GameObject player;
     // Start is called once before the first execution of Update after the MonoBehaviour is created
