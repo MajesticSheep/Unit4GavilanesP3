@@ -5,13 +5,19 @@ public class PlayerController : MonoBehaviour
 {
 
     private Rigidbody playerRb;
-    public float speed = 5.0f;
+    public float speed = 2.0f;
     public bool hasPowerup;
     private float powerupStrength = 15.0f;
 
     private GameObject focalPoint;
 
     public GameObject powerUpIndicator;
+
+    public PowerUpType currentPowerUp = PowerUpType.None;
+
+    public GameObject rocketPrefab;
+    private GameObject tmpRocket;
+    private Coroutine powerupCountDown;
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
@@ -33,9 +39,15 @@ public class PlayerController : MonoBehaviour
         if (other.CompareTag("PowerUp"))
         {
             hasPowerup = true;
-            Destroy(other.gameObject);
-            StartCoroutine(PowerUpCountdownRoutine());
+            currentPowerUp = other.gameObject.GetComponent<PowerUp>().powerUpType;
             powerUpIndicator.gameObject.SetActive(true);
+            Destroy(other.gameObject);
+
+            if(powerupCountDown != null)
+            {
+                StopCoroutine(powerupCountDown);
+            }
+            powerupCountDown = StartCoroutine(PowerUpCountdownRoutine());
         }
     }
 
