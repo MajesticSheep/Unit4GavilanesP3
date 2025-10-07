@@ -1,24 +1,38 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Unity.VisualScripting;
 
 public class PlayerControllerX : MonoBehaviour
 {
     private Rigidbody playerRb;
     private float speed = 500;
+    private float speeder = 1000;
     private GameObject focalPoint;
 
     public bool hasPowerup;
     public GameObject powerupIndicator;
     public int powerUpDuration = 5;
+    private Coroutine powerupCountDown;
 
     private float normalStrength = 10; // how hard to hit enemy without powerup
     private float powerupStrength = 25; // how hard to hit enemy with powerup
+
+    public GameObject particleSmokePrefab;
+    public ParticleSystem particleSmoke;
+
+    public bool canUseSpace = true;
+    
+
     
     void Start()
     {
         playerRb = GetComponent<Rigidbody>();
         focalPoint = GameObject.Find("Focal Point");
+
+        GameObject smokeInstance = Instantiate(particleSmokePrefab, transform.position + new Vector3 (0.6f, 0.6f, 0), Quaternion.identity);
+
+        particleSmoke = smokeInstance.GetComponent<ParticleSystem>();
     }
 
     void Update()
@@ -30,6 +44,21 @@ public class PlayerControllerX : MonoBehaviour
         // Set powerup indicator position to beneath player
         powerupIndicator.transform.position = transform.position + new Vector3(0, -0.6f, 0);
 
+        particleSmoke.transform.position = transform.position + new Vector3(0, -0.6f, 0);
+
+        if (Input.GetKeyDown(KeyCode.Space) && canUseSpace)
+        {
+            playerRb.AddForce(focalPoint.transform.forward * speeder * verticalInput);
+
+            particleSmoke.Play();
+
+            StartCoroutine(SpaceBarCooldown());
+        }
+        else
+        {
+            playerRb.AddForce(focalPoint.transform.forward * verticalInput * speed * Time.deltaTime);
+        }
+
     }
 
     // If Player collides with powerup, activate powerup
@@ -40,6 +69,12 @@ public class PlayerControllerX : MonoBehaviour
             Destroy(other.gameObject);
             hasPowerup = true;
             powerupIndicator.SetActive(true);
+
+            if (powerupCountDown != null)
+            {
+                StopCoroutine(powerupCountDown);
+            }
+            powerupCountDown = StartCoroutine(PowerupCooldown());
         }
     }
 
@@ -48,16 +83,23 @@ public class PlayerControllerX : MonoBehaviour
     {
         yield return new WaitForSeconds(powerUpDuration);
         hasPowerup = false;
-        powerupIndicator.SetActive(false);
+        powerupIndicator.gameObject.SetActive(false);
+    }
+
+    IEnumerator SpaceBarCooldown()
+    {
+        canUseSpace = false;
+        yield return new WaitForSeconds(1);
+        canUseSpace = true;
     }
 
     // If Player collides with enemy
-    private void OnCollisionEnter(Collision other)
+    private void OnCollisionEnter(Collision collision)
     {
-        if (other.gameObject.CompareTag("Enemy"))
+        if (collision.gameObject.CompareTag("Enemy"))
         {
-            Rigidbody enemyRigidbody = other.gameObject.GetComponent<Rigidbody>();
-            Vector3 awayFromPlayer =  transform.position - other.gameObject.transform.position; 
+            Rigidbody enemyRigidbody = collision.gameObject.GetComponent<Rigidbody>();
+            Vector3 awayFromPlayer =  collision.gameObject.transform.position - transform.position; 
            
             if (hasPowerup) // if have powerup hit enemy with powerup force
             {
@@ -71,7 +113,5 @@ public class PlayerControllerX : MonoBehaviour
 
         }
     }
-
-
 
 }
